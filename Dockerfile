@@ -4,7 +4,11 @@
 #  - Fine to leave extra here, as only the resulting binary is copied out
 FROM docker.io/rust:1-bookworm AS monolith-builder
 
-RUN set -eux && cargo install --locked monolith
+RUN --mount=type=cache,target=/app/target/ \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/usr/local/cargo/registry/ \
+    set -eux && \
+    cargo install --locked monolith
 
 # Stage: main-app
 # Purpose: Compiles the frontend and
