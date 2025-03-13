@@ -18,6 +18,15 @@ FROM node:22.14-bookworm-slim AS main-app
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux && \
+    rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+        curl ca-certificates
+
 RUN mkdir /data
 
 WORKDIR /data
@@ -32,19 +41,15 @@ COPY ./yarn.lock ./package.json ./
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     set -eux && \
-    yarn install --network-timeout 10000000 && \
-    # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
-    apt-get update && \
-    apt-get install -yqq --no-install-recommends curl ca-certificates && \
-    apt-get autoremove && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    yarn install --network-timeout 10000000
 
 # Copy the compiled monolith binary from the builder stage
 COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
 
-RUN set -eux && \
-    apt-get clean && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
+    set -eux && \
+    #npx playwright install --with-deps chromium && \
     yarn cache clean
 
 COPY . .
