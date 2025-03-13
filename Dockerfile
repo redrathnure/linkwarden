@@ -31,6 +31,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         curl ca-certificates \
         tini
 
+# Copy the compiled monolith binary from the builder stage
+COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
+
 # Lazy version, https://github.com/tianon/gosu/blob/master/INSTALL.md
 COPY --from=tianon/gosu /gosu /usr/local/bin/
 COPY --chown=node:node docker/bin/docker-entrypoint.sh /
@@ -51,8 +54,6 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     set -eux && \
     yarn install --network-timeout 10000000
 
-# Copy the compiled monolith binary from the builder stage
-COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
 
 # RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 #     --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
