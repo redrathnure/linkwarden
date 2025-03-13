@@ -49,6 +49,7 @@ COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monoli
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
     --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,target=/root/.npm \
     set -eux && \
     #npx playwright install --with-deps chromium && \
     yarn cache clean
