@@ -48,13 +48,15 @@ COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monoli
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
+    --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     set -eux && \
     #npx playwright install --with-deps chromium && \
     yarn cache clean
 
 COPY . .
 
-RUN yarn prisma:generate && \
+RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    yarn prisma:generate && \
     yarn web:build
 
 HEALTHCHECK --interval=30s \
