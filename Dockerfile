@@ -4,6 +4,7 @@
 #  - Fine to leave extra here, as only the resulting binary is copied out
 FROM docker.io/rust:1-trixie AS monolith-builder
 
+# Build monolith
 RUN --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
@@ -24,7 +25,16 @@ ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+ENV SRV_DATA_ROOT=/data
+ENV PLAYWRIGHT_BROWSERS_PATH=$SRV_DATA_ROOT/.cache/ms-playwright
+
+# Copy the compiled monolith binary from the builder stage
+COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
+
+# Lazy version, https://github.com/tianon/gosu/blob/master/INSTALL.md
+COPY --from=tianon/gosu /gosu /usr/local/bin/
+COPY --chown=node:node docker/bin/docker-entrypoint.sh /
+
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -33,37 +43,44 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
     apt-get update && \
     apt-get install -yq --no-install-recommends \
-        curl ca-certificates
+        curl ca-certificates \
+        sudo \
+        tini && \
+        # playwright installation would need sudo to install system packages
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+    usermod -a -G sudo node && \
+    chmod ugo+rx,go-w /docker-entrypoint.sh && \
+    mkdir -p $SRV_DATA_ROOT/data && \
+    chown node:node -R $SRV_DATA_ROOT
 
-RUN mkdir /data
+RUN mkdir -p $SRV_DATA_ROOT
 
-WORKDIR /data
+WORKDIR $SRV_DATA_ROOT
 
 RUN corepack enable
 
-COPY ./.yarnrc.yml ./
+USER node
 
-COPY ./apps/web/package.json ./apps/web/playwright.config.ts ./apps/web/
+COPY --chown=node:node ./.yarnrc.yml ./
 
-COPY ./apps/worker/package.json ./apps/worker/
+COPY --chown=node:node ./apps/web/package.json ./apps/web/playwright.config.ts ./apps/web/
 
-COPY ./packages ./packages
+COPY --chown=node:node ./apps/worker/package.json ./apps/worker/
 
-COPY ./yarn.lock ./package.json ./
+COPY --chown=node:node ./packages ./packages
+
+COPY --chown=node:node ./yarn.lock ./package.json ./
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
-    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
     --mount=type=cache,target=/root/.npm \
     set -eux && \
     yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
-# Copy the compiled monolith binary from the builder stage
-COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
-
-COPY . .
+COPY --chown=node:node . .
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
@@ -80,4 +97,20 @@ HEALTHCHECK --interval=30s \
 
 EXPOSE 3000
 
+# Switch back to root to adjust permissions in docker-entrypoint.sh
+# docker-entrypoint.sh will switch process to node:node or PUID:PGID
+USER root
+
+# Remove sudo, just in case
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux && \
+    sed -i '/%sudo ALL=(ALL) NOPASSWD:ALL/d' /etc/sudoers && \
+    deluser node sudo && \
+    export SUDO_FORCE_REMOVE=yes && \
+    apt-get remove -yq \
+        sudo
+
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["sh", "-c", "yarn prisma:deploy && yarn concurrently:start"]
