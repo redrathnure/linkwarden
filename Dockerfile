@@ -18,6 +18,8 @@ FROM node:18-bookworm-slim AS main-app
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
