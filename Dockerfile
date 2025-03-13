@@ -19,6 +19,7 @@ FROM node:18-bookworm-slim AS main-app
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+ENV DATA_ROOT=/data
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
@@ -28,11 +29,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
     apt-get update && \
     apt-get install -yq --no-install-recommends \
-        curl ca-certificates
+        curl ca-certificates \
+        tini
 
-RUN mkdir /data
+# Lazy version, https://github.com/tianon/gosu/blob/master/INSTALL.md
+COPY --from=tianon/gosu /gosu /usr/local/bin/
+COPY --chown=node:node docker/bin/docker-entrypoint.sh /
 
-WORKDIR /data
+RUN mkdir -p $DATA_ROOT
+
+WORKDIR $DATA_ROOT
 
 COPY ./package.json ./yarn.lock ./playwright.config.ts ./
 
@@ -56,6 +62,10 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     yarn prisma generate && \
     yarn build
 
+
+RUN chmod ugo+rx,go-w /docker-entrypoint.sh \
+    && chown node:node -R $DATA_ROOT
+
 HEALTHCHECK --interval=30s \
             --timeout=5s \
             --start-period=10s \
@@ -64,4 +74,5 @@ HEALTHCHECK --interval=30s \
 
 EXPOSE 3000
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD yarn prisma migrate deploy && yarn start
