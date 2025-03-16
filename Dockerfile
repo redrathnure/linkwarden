@@ -18,8 +18,9 @@ FROM node:22.14-bookworm-slim AS main-app
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
 ENV SRV_DATA_ROOT=/data
+ENV PLAYWRIGHT_BROWSERS_PATH=$SRV_DATA_ROOT/.cache/ms-playwright
+
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
