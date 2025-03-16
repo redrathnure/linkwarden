@@ -4,4 +4,5 @@ pgdata
 .devcontainer
 docker-compose.yml
 Dockerfile
-README.md
+Dockerfile.*
+*.md
