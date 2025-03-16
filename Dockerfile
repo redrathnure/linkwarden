@@ -19,7 +19,7 @@ FROM node:22.14-bookworm-slim AS main-app
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
-ENV DATA_ROOT=/data
+ENV SRV_DATA_ROOT=/data
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -38,9 +38,9 @@ COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monoli
 COPY --from=tianon/gosu /gosu /usr/local/bin/
 COPY --chown=node:node docker/bin/docker-entrypoint.sh /
 
-RUN mkdir -p $DATA_ROOT
+RUN mkdir -p $SRV_DATA_ROOT
 
-WORKDIR $DATA_ROOT
+WORKDIR $SRV_DATA_ROOT
 
 COPY ./apps/web/package.json ./apps/web/playwright.config.ts ./apps/web/
 
@@ -71,7 +71,7 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
 
 
 RUN chmod ugo+rx,go-w /docker-entrypoint.sh \
-    && chown node:node -R $DATA_ROOT
+    && chown node:node -R $SRV_DATA_ROOT
 
 HEALTHCHECK --interval=30s \
             --timeout=5s \
