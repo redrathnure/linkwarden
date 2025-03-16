@@ -48,7 +48,8 @@ USER node
 
 COPY --chown=node:node ./package.json ./yarn.lock ./playwright.config.ts ./
 
-RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+RUN --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache/yarn/ \
+    --mount=type=cache,uid=1000,gid=1000,target=/home/node/.npm \
     set -eux && \
     yarn install --network-timeout 10000000
 
@@ -67,7 +68,8 @@ USER node
 # Copy the rest and build it
 COPY --chown=node:node . .
 
-RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+RUN --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache/yarn/ \
+    --mount=type=cache,uid=1000,gid=1000,target=/home/node/.npm \
     npx update-browserslist-db@latest && \
     yarn prisma generate && \
     yarn build
