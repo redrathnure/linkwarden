@@ -1,3 +1,67 @@
+# Fork Info
+
+A staging repository for Linkwarden improvements. A following changes were done here:
+
+1. Docker image is run with node:node user (default user for official nodejs images). By default it's `1000:1000` however it may be adjusted using `PUID` and `PGID` args.
+2. It's possible to run contained with `-u UID:GID` params. Please note it is **not** the same as `PUID:PGID` args and it is **not** recommended at all (see description below)
+3. Experimental build with node.js 20 (✓) and Alpine based images (🚧 TODO)
+4. Images were optimized for Docker BuildX toolset (reorder docker layers, use cache mount points etc)
+
+## Some of the Issues Addressed
+
+### Rootless Container
+
+Why: to not run process with under privilagied user, to avoid creation file with root:root chown and to make possibility to run image(s) from predefined (non root) host user.
+Problem: PostgresSQL images are ready for rootless run. Just use `-u` arg or `user: ` compose directive. However official Linkwarden image have multiple file permissions related problems.
+How to fix:
+Option 1: The custom images run under node:node (1000:1000) user by default. No any process with privileged user context anymore. Just run Docker/Docker Compose as usual without any extra parameters. All internal files are ready for this, all new files will be created with `1000:1000` owner.
+Option 2. The custom images support `PUID` and `PGID` environment arguments to specify desired UID and GID. Please make sure that shared mount points has right permissions, all new files will be created with `PUID:PGID` owner.
+
+An example of docker compose file:
+
+```
+name: linkwarden
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env
+    restart: always
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    user: "${UID}:${GID}" # UID and GID must be specified in .env file, otherwise put the values here
+
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:latest
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      - PUID=${UID:-1000} # UID and GID must be specified in .env file, otherwise put the values here
+      - PGID=${UID:-1000} # UID and GID must be specified in .env file, otherwise put the values here
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ./data:/data/data
+    depends_on:
+      - postgres
+```
+
+## Image Tags/Versions
+
+Node.js 18 (Debian Bookworm based):
+
+* `latest`
+* `1-beta`, `1.2-beta`, `1.2.3-beta` 
+* `1.2.3-beta.13.g15da68da8` where the `13.g15da68da8` part points to the git commit where the images have been built from.
+* tags with a `-node18` suffix.
+
+Node.js 20 (Debian Bookworm based): same as nodejs 18 but with `-node20` suffix.
+
+Linux Alpine based images (🚧 TODO): same as nodejs 18/20 but with `-alpine` suffix.
+
+# Original Project Readme
+
+
 <div align="center">
   <img src="./assets/logo.png" width="100px" />
   <h1>Linkwarden</h1>
