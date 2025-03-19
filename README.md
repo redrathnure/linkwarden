@@ -4,14 +4,14 @@ A staging repository for Linkwarden improvements. A following changes were done 
 
 1. Docker image is run with node:node user (default user for official nodejs images). By default it's `1000:1000` however it may be adjusted using `PUID` and `PGID` args.
 2. It's possible to run contained with `-u UID:GID` params. Please note it is **not** the same as `PUID:PGID` args and it is **not** recommended at all (see description below)
-3. Experimental build with node.js 20 (✓) and Alpine based images (🚧 TODO)
+3. Experimental build with node.js 20 (✓)
 4. Images were optimized for Docker BuildX toolset (reorder docker layers, use cache mount points etc)
 
 ## Some of the Issues Addressed
 
 ### Rootless Container
 
-Why: to not run process with under privilagied user, to avoid creation file with root:root chown and to make possibility to run image(s) from predefined (non root) host user.
+Why: to not run process with under privileged user, to avoid creation file with root:root chown and to make possibility to run image(s) from predefined (non root) host user.
 Problem: PostgresSQL images are ready for rootless run. Just use `-u` arg or `user: ` compose directive. However official Linkwarden image have multiple file permissions related problems.
 How to fix:
 Option 1: The custom images run under node:node (1000:1000) user by default. No any process with privileged user context anymore. Just run Docker/Docker Compose as usual without any extra parameters. All internal files are ready for this, all new files will be created with `1000:1000` owner.
@@ -56,8 +56,6 @@ Node.js 18 (Debian Bookworm based):
 * tags with a `-node18` suffix.
 
 Node.js 20 (Debian Bookworm based): same as nodejs 18 but with `-node20` suffix.
-
-Linux Alpine based images (🚧 TODO): same as nodejs 18/20 but with `-alpine` suffix.
 
 # Original Project Readme
 
