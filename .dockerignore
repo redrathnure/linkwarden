@@ -6,3 +6,6 @@ docker-compose.yml
 Dockerfile
 Dockerfile.*
 *.md
+.*
+**/.DS_Store
+**/node_modules
