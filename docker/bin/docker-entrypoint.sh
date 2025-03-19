@@ -36,7 +36,7 @@ if [ "$PUID" != "$ORIGIN_NODE_UID" -o "$PGID" != "$ORIGIN_NODE_GID" ]; then
         #chown node:node -R $(ls $SRV_DATA_ROOT -I data)
         # Pay attention to playwright and /data/.next/cache files
         chown node:node -R $PLAYWRIGHT_BROWSERS_PATH
-        chown node:node $SRV_DATA_ROOT/.next/cache   
+        chown node:node $SRV_DATA_ROOT/.next/cache
     else
         printf "WARNING: PUID/PGID envs were specified together with custom -u UID:GID argument.\n"
         printf "This may lead to unexpected problems with file permissions.\n"
