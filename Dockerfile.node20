@@ -66,7 +66,6 @@ COPY --chown=node:node . .
 
 RUN --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache/yarn/ \
     --mount=type=cache,uid=1000,gid=1000,target=/home/node/.npm \
-    npx update-browserslist-db@latest && \
     yarn prisma generate && \
     yarn build
 
