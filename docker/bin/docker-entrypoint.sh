@@ -41,6 +41,7 @@ if [ "$PUID" != "$ORIGIN_NODE_UID" -o "$PGID" != "$ORIGIN_NODE_GID" ]; then
 fi
 
 
+
 if [ "$SRC_UID" = "0" ]; then
     printf "Switching to node user (%s:%s)... \n" "$PUID" "$PGID"
 
