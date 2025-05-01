@@ -4,7 +4,7 @@ A staging repository for Linkwarden improvements. A following changes were done 
 
 1. Docker image is run with node:node user (default user for official nodejs images). By default it's `1000:1000` however it may be adjusted using `PUID` and `PGID` args.
 2. It's possible to run contained with `-u UID:GID` params. Please note it is **not** the same as `PUID:PGID` args and it is **not** recommended at all (see description below)
-3. Experimental build with node.js 20 (✓)
+3. ~~Experimental build with node.js 20 (✓)~~
 4. Images were optimized for Docker BuildX toolset (reorder docker layers, use cache mount points etc)
 
 ## Some of the Issues Addressed
@@ -48,14 +48,14 @@ services:
 
 ## Image Tags/Versions
 
-Node.js 18 (Debian Bookworm based):
+Node.js 22 (Debian Bookworm based):
 
 * `latest`
 * `1-beta`, `1.2-beta`, `1.2.3-beta` 
 * `1.2.3-beta.13.g15da68da8` where the `13.g15da68da8` part points to the git commit where the images have been built from.
-* tags with a `-node18` suffix.
+* tags with a `-node22` suffix.
 
-Node.js 20 (Debian Bookworm based): same as nodejs 18 but with `-node20` suffix.
+~~Node.js 20 (Debian Bookworm based): same as nodejs 18 but with `-node20` suffix.~~
 
 # Original Project Readme
 
