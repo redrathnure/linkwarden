@@ -24,6 +24,8 @@ ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux && \
