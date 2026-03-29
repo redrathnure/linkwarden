@@ -53,6 +53,8 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
+    --mount=type=cache,target=/root/.npm \
     set -eux && \
     yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
@@ -63,6 +65,7 @@ COPY . .
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
     yarn prisma:generate && \
     yarn web:build && \
     rm -rf apps/web/.next/cache
