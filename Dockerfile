@@ -50,20 +50,20 @@ COPY ./packages ./packages
 COPY ./yarn.lock ./package.json ./
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux && \
     yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
 # Copy the compiled monolith binary from the builder stage
 COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
 
-RUN set -eux && \
-    yarn cache clean
-
 COPY . .
 
-RUN yarn prisma:generate && \
+RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    yarn prisma:generate && \
     yarn web:build && \
     rm -rf apps/web/.next/cache
 
