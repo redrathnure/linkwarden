@@ -2,7 +2,7 @@
 # Purpose: Uses the Rust image to build monolith
 # Notes:
 #  - Fine to leave extra here, as only the resulting binary is copied out
-FROM docker.io/rust:1.86-bullseye AS monolith-builder
+FROM docker.io/rust:1-trixie AS monolith-builder
 
 RUN set -eux && cargo install --locked monolith
 
@@ -10,7 +10,7 @@ RUN set -eux && cargo install --locked monolith
 # Purpose: Compiles the frontend and
 # Notes:
 #  - Nothing extra should be left here.  All commands should cleanup
-FROM node:20.19.6-bullseye-slim AS main-app
+FROM node:20.19.6-trixie-slim AS main-app
 
 ENV YARN_HTTP_TIMEOUT=10000000
 
