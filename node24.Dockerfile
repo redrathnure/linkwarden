@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/app/target/ \
 # Purpose: Compiles the frontend and
 # Notes:
 #  - Nothing extra should be left here.  All commands should cleanup
-FROM node:20-trixie-slim AS main-app
+FROM node:24-trixie-slim AS main-app
 
 ENV YARN_HTTP_TIMEOUT=10000000
 

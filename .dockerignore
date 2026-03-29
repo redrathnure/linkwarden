@@ -4,7 +4,12 @@ pgdata
 .devcontainer
 docker-compose.yml
 Dockerfile
-README.md
+*.Dockerfile
+*.md
+.*
+!**/.yarnrc.yml
+**/.DS_Store
+**/node_modules
 .yarn/install-state.gz
 ./apps/mobile
 **/.next/cache
