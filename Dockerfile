@@ -24,6 +24,15 @@ ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux && \
+    rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
+    apt-get update && \
+    apt-get install -yq --no-install-recommends \
+        curl ca-certificates
+
 RUN mkdir /data
 
 WORKDIR /data
@@ -41,20 +50,15 @@ COPY ./packages ./packages
 COPY ./yarn.lock ./package.json ./
 
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \ 
     set -eux && \
-    yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker && \
-    # Install curl for healthcheck, and ca-certificates to prevent monolith from failing to retrieve resources due to invalid certificates
-    apt-get update && \
-    apt-get install -yqq --no-install-recommends curl ca-certificates && \
-    apt-get autoremove && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
 # Copy the compiled monolith binary from the builder stage
 COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
 
 RUN set -eux && \
-    apt-get clean && \
     yarn cache clean
 
 COPY . .
