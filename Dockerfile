@@ -44,11 +44,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -yq --no-install-recommends \
         curl ca-certificates \
-        sudo \
         tini && \
-        # playwright installation would need sudo to install system packages
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-    usermod -a -G sudo node && \
     chmod ugo+rx,go-w /docker-entrypoint.sh && \
     mkdir -p $SRV_DATA_ROOT/data && \
     chown node:node -R $SRV_DATA_ROOT
@@ -58,8 +54,6 @@ RUN mkdir -p $SRV_DATA_ROOT
 WORKDIR $SRV_DATA_ROOT
 
 RUN corepack enable
-
-USER node
 
 COPY --chown=node:node ./.yarnrc.yml ./
 
@@ -71,6 +65,10 @@ COPY --chown=node:node ./packages ./packages
 
 COPY --chown=node:node ./yarn.lock ./package.json ./
 
+
+# Unable to run `yarn workspaces focus` from the `node` user because some additional
+# system packages need to be installed.
+# This is why we run ift from root and then chown the resulting files to node:node
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -78,7 +76,10 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
     --mount=type=cache,target=/root/.npm \
     set -eux && \
-    yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
+    yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker && \
+    chown node:node -R $SRV_DATA_ROOT
+
+USER node
 
 COPY --chown=node:node . .
 
@@ -100,16 +101,6 @@ EXPOSE 3000
 # Switch back to root to adjust permissions in docker-entrypoint.sh
 # docker-entrypoint.sh will switch process to node:node or PUID:PGID
 USER root
-
-# Remove sudo, just in case
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    set -eux && \
-    sed -i '/%sudo ALL=(ALL) NOPASSWD:ALL/d' /etc/sudoers && \
-    deluser node sudo && \
-    export SUDO_FORCE_REMOVE=yes && \
-    apt-get remove -yq \
-        sudo
 
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
