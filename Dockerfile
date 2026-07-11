@@ -66,11 +66,12 @@ COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monoli
 
 # Install minimal runtime system utilities
 # procps provides `ps`, which concurrently -k needs to manage child processes
-RUN set -eux && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux && \
+    rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     apt-get update && \
-    apt-get install -yqq --no-install-recommends curl ca-certificates openssl procps && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -yqq --no-install-recommends curl ca-certificates openssl procps
 
 # Copy ONLY the clean production assets from Stage 2
 COPY --from=app-builder /data/node_modules ./node_modules
@@ -83,12 +84,11 @@ RUN corepack enable && corepack install
 
 # Install only the Chromium headless shell (Playwright's smallest browser) plus
 # the shared libraries it needs at runtime. Full Chromium is not required.
-RUN set -eux && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux && \
     export PATH=/data/node_modules/.bin:$PATH && \
-    apt-get update && \
-    playwright install --with-deps chromium-headless-shell && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    playwright install --with-deps chromium-headless-shell
 
 # Next.js writes its image-optimizer cache here at runtime; precreate it as
 # world-writable so it also works when the container runs as a non-root user
