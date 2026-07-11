@@ -3,7 +3,13 @@
 # ==============================================================================
 FROM docker.io/rust:1.96-trixie AS monolith-builder
 ARG MONOLITH_VERSION=2.10.1
-RUN set -eux && cargo install --locked monolith@${MONOLITH_VERSION}
+
+# Build monolith
+RUN --mount=type=cache,target=/app/target/ \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/usr/local/cargo/registry/ \
+    set -eux && \
+    cargo install --locked monolith@${MONOLITH_VERSION}
 
 # ==============================================================================
 # Stage 2: App Builder (Where the heavy building happens)
