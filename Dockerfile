@@ -2,7 +2,13 @@
 # Stage 1: Monolith Builder
 # ==============================================================================
 FROM docker.io/rust:1.96-trixie AS monolith-builder
-RUN set -eux && cargo install --locked monolith
+
+# Build monolith
+RUN --mount=type=cache,target=/app/target/ \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/usr/local/cargo/registry/ \
+    set -eux && \
+    cargo install --locked monolith
 
 # ==============================================================================
 # Stage 2: App Builder (Where the heavy building happens)
