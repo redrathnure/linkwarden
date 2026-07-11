@@ -38,17 +38,22 @@ COPY packages/types/package.json ./packages/types/
 
 # Install everything needed to build
 RUN --mount=type=cache,sharing=locked,target=/root/.yarn/berry/cache \
+    --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
 # Copy source and build
 COPY . .
-RUN yarn prisma:generate && \
+RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    yarn prisma:generate && \
     yarn web:build
 
 # Clean up dev dependencies right here before copying to the final stage
-RUN yarn workspaces focus --production linkwarden @linkwarden/web @linkwarden/worker && \
-    rm -rf apps/web/.next/cache && \
-    yarn cache clean
+RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    yarn workspaces focus --production linkwarden @linkwarden/web @linkwarden/worker && \
+    rm -rf apps/web/.next/cache
 
 # ==============================================================================
 # Stage 3: Final Runtime (This stage will be ~400MB total)
