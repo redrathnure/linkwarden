@@ -68,7 +68,7 @@ FROM node:22-trixie-slim AS main-app
 ENV NODE_ENV=production
 ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 # Stable, copyable browser location shared by install and runtime
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
 ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /data
 
