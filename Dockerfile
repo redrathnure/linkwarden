@@ -39,18 +39,24 @@ COPY packages/types/package.json ./packages/types/
 RUN --mount=type=cache,sharing=locked,target=/root/.yarn/berry/cache \
     --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
+    --mount=type=cache,target=/root/.npm \
     yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
 # Copy source and build
 COPY . .
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
+    --mount=type=cache,target=/root/.npm \
     yarn prisma:generate && \
     yarn web:build
 
 # Clean up dev dependencies right here before copying to the final stage
 RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
+    --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
+    --mount=type=cache,target=/root/.npm \
     yarn workspaces focus --production linkwarden @linkwarden/web @linkwarden/worker && \
     rm -rf apps/web/.next/cache
 
