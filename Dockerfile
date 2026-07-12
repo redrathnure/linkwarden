@@ -1,7 +1,7 @@
 # ==============================================================================
 # Stage 1: Monolith Builder
 # ==============================================================================
-FROM docker.io/rust:1.96-trixie AS monolith-builder
+FROM docker.io/rust:1-trixie AS monolith-builder
 
 # Build monolith
 RUN --mount=type=cache,target=/app/target/ \
@@ -21,7 +21,8 @@ ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 # The web postinstall runs `playwright install`; skip it here since the browser
 # is installed in the final stage. Avoids downloading a browser we then discard.
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-WORKDIR /data
+ENV SRV_DATA_ROOT=/data
+WORKDIR $SRV_DATA_ROOT
 
 RUN corepack enable
 
@@ -66,13 +67,19 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
 FROM node:22-trixie-slim AS main-app
 ENV NODE_ENV=production
 ENV PRISMA_HIDE_UPDATE_MESSAGE=1
+ENV SRV_DATA_ROOT=/data
 # Stable, copyable browser location shared by install and runtime
-ENV PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=$SRV_DATA_ROOT/.cache/ms-playwright
 ARG DEBIAN_FRONTEND=noninteractive
-WORKDIR /data
-
+RUN mkdir -p $SRV_DATA_ROOT
+WORKDIR $SRV_DATA_ROOT
 # Copy the Rust monolith binary
 COPY --from=monolith-builder /usr/local/cargo/bin/monolith /usr/local/bin/monolith
+
+# Lazy version, https://github.com/tianon/gosu/blob/master/INSTALL.md
+COPY --from=tianon/gosu /gosu /usr/local/bin/
+COPY docker/bin/docker-entrypoint.sh /
+
 
 # Install minimal runtime system utilities
 # procps provides `ps`, which concurrently -k needs to manage child processes
@@ -81,21 +88,26 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     set -eux && \
     rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     apt-get update && \
-    apt-get install -yqq --no-install-recommends curl ca-certificates openssl procps
+    apt-get install -yqq --no-install-recommends curl ca-certificates openssl procps \
+        tini && \
+    chmod ugo+rx,go-w /docker-entrypoint.sh && \
+    mkdir -p $SRV_DATA_ROOT/data && \
+    chown node:node -R $SRV_DATA_ROOT
+
 
 # Copy ONLY the clean production assets from Stage 2
-COPY --from=app-builder /data/node_modules ./node_modules
-COPY --from=app-builder /data/package.json ./package.json
-COPY --from=app-builder /data/apps/web ./apps/web
-COPY --from=app-builder /data/apps/worker ./apps/worker
-COPY --from=app-builder /data/packages ./packages
+COPY --chown=node:node --from=app-builder /data/node_modules ./node_modules
+COPY --chown=node:node --from=app-builder /data/package.json ./package.json
+COPY --chown=node:node --from=app-builder /data/apps/web ./apps/web
+COPY --chown=node:node --from=app-builder /data/apps/worker ./apps/worker
+COPY --chown=node:node --from=app-builder /data/packages ./packages
 
 # Install only the Chromium headless shell (Playwright's smallest browser) plus
 # the shared libraries it needs at runtime. Full Chromium is not required.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     set -eux && \
-    export PATH=/data/node_modules/.bin:$PATH && \
+    export PATH=$SRV_DATA_ROOT/node_modules/.bin:$PATH && \
     playwright install --with-deps chromium-headless-shell
 
 HEALTHCHECK --interval=30s \
@@ -106,4 +118,9 @@ HEALTHCHECK --interval=30s \
 
 EXPOSE 3000
 
+# Switch back to root to adjust permissions in docker-entrypoint.sh
+# docker-entrypoint.sh will switch process to node:node or PUID:PGID
+USER root
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["sh", "-c", "export PATH=/data/node_modules/.bin:$PATH && prisma migrate deploy --schema=/data/packages/prisma/schema.prisma && exec concurrently -k -n web,worker \"cd /data/apps/web && exec next start\" \"cd /data/apps/worker && exec tsx worker.ts\""]
