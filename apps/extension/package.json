@@ -41,7 +41,7 @@
     "zod": "^4.6.6"
   },
   "devDependencies": {
-    "@playwright/test": "1.57.0",
+    "@playwright/test": "1.63.0",
     "@types/firefox-webext-browser": "^143.0.0",
     "@types/node": "^22.14.1",
     "@types/react": "^19.1.0",
