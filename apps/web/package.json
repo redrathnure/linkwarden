@@ -67,7 +67,7 @@
     "node-fetch": "^2.7.0",
     "nodemailer": "^9.0.3",
     "papaparse": "^5.5.3",
-    "playwright": "1.57.0",
+    "playwright": "1.63.0",
     "react": "19.1.0",
     "react-colorful": "^5.6.1",
     "react-dom": "19.1.0",
@@ -91,7 +91,7 @@
     "zustand": "^4.3.8"
   },
   "devDependencies": {
-    "@playwright/test": "1.57.0",
+    "@playwright/test": "1.63.0",
     "@types/bcrypt": "^5.0.0",
     "@types/crypto-js": "^4.1.1",
     "@types/formidable": "^3.4.5",
