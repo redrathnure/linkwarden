@@ -94,6 +94,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -yqq --no-install-recommends curl ca-certificates openssl procps \
         tini && \
     chmod ugo+rx,go-w /docker-entrypoint.sh && \
+    mkdir -p $SRV_DATA_ROOT/apps/web/.next/cache && \
     mkdir -p $SRV_DATA_ROOT/data && \
     chown node:node -R $SRV_DATA_ROOT
 
