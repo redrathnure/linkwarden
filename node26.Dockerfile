@@ -54,7 +54,11 @@ RUN --mount=type=cache,sharing=locked,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.yarn \
     --mount=type=cache,uid=1000,gid=1000,sharing=locked,target=/home/node/.cache \
     --mount=type=cache,target=/root/.npm \
-    yarn prisma:generate && \
+    # On arm64 built under QEMU emulation failed (`[Context: getDmmf]` error)
+    # The optimizing V8 compiler (d8) corrupts the Prisma schema-engine output.
+    # A `--liftoff-only` forces V8's lightweight liftoff compiler instead and used as temp fix.
+    # See https://github.com/prisma/orm/issues/29464
+    node --liftoff-only node_modules/.bin/prisma generate --schema=packages/prisma/schema.prisma && \
     yarn web:build
 
 # Clean up dev dependencies right here before copying to the final stage
